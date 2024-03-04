@@ -1,0 +1,11 @@
+$schema: https://azuremlschemas.azureedge.net/latest/flow.schema.json
+name: bring_your_own_data_qna
+display_name: Q&A on Your Data
+type: standard
+path: ./flow.dag.yaml
+description: Use LLM and data from your own indexed files to ground multi-round question and answering capabilities.
+properties:
+  promptflow.stage: prod
+  promptflow.details.type: markdown
+  promptflow.details.source: README.md
+  promptflow.batch_inputs: samples.json

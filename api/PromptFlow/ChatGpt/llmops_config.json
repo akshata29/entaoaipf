@@ -1,0 +1,22 @@
+{
+    "envs":[
+            {
+                "ENV_NAME": "pr",
+                "RUNTIME_NAME": "",
+                "KEYVAULT_NAME": "kv-dataaist096645586114",
+                "RESOURCE_GROUP_NAME": "dataai",
+                "WORKSPACE_NAME": "dataaistudio",
+                "STANDARD_FLOW_PATH": "flows/standard",
+                "EVALUATION_FLOW_PATH": "flows/evaluation"
+            },
+            {
+                "ENV_NAME": "dev",
+                "RUNTIME_NAME": "",
+                "KEYVAULT_NAME": "kv-dataaist096645586114",
+                "RESOURCE_GROUP_NAME": "dataai",
+                "WORKSPACE_NAME": "dataaistudio",
+                "STANDARD_FLOW_PATH": "flows/standard",
+                "EVALUATION_FLOW_PATH": "flows/evaluation"
+            }
+    ]
+}

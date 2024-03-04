@@ -1,0 +1,155 @@
+name: platform_cd_dev_workflow
+
+on:
+  workflow_call:
+    inputs:
+      env_name:
+        type: string
+        description: "Execution Environment"
+        required: true
+      flow_type:
+        type: string
+        description: "The flow use-case to execute"
+        required: true
+      deployment_type:
+        type: string
+        description: "Determine type of deployment - aml, aks, docker, webapp"
+        required: true
+    secrets:
+      azure_credentials:
+        description: "service principal auth to Azure"
+        required: true
+      connection_details:
+        description: "prompt flow connection details"
+        required: false
+      registry_details:
+        description: "prompt flow registry details"
+        required: false
+  workflow_dispatch:
+    inputs:
+      env_name:
+        type: string
+        description: "Execution Environment"
+        required: true
+        default: "dev"
+      flow_type:
+        type: string
+        description: "The flow use-case to execute"
+        required: true
+      deployment_type:
+        type: string
+        description: "Determine type of deployment - aml, aks, docker, webapp"
+        required: true
+
+jobs:
+  flow-deployment:
+    name: prompt flow deployment job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Actions
+        uses: actions/checkout@v4
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.azure_credentials }}
+      - name: Configure Azure ML Agent
+        uses: ./.github/actions/configure_azureml_agent
+      - name: load the current Azure subscription details
+        id: subscription_details
+        shell: bash
+        run: |
+          export subscriptionId=$(az account show --query id -o tsv)
+          echo "SUBSCRIPTION_ID=$subscriptionId" >> $GITHUB_OUTPUT
+
+      #=====================================
+      # Registers the flow in Azure ML registry
+      # Writes latest model version to model_version.txt file.
+      # model_version.txt file is read in next step
+      #=====================================   
+      - name: Register flow as model in AzureML
+        uses: ./.github/actions/execute_script
+        with:
+          step_name: "Register flow as model in AzureML"
+          script_parameter: |
+            python -m llmops.common.deployment.register_model \
+            --subscription_id ${{ steps.subscription_details.outputs.SUBSCRIPTION_ID }} \
+            --flow_to_execute ${{ inputs.flow_type }} \
+            --output_file "model_version.txt" \
+            --build_id ${{ github.run_id }} \
+            --env_name ${{ inputs.env_name }} \
+
+      #=====================================
+      # Reads model_version.txt file. Assigns it to variable MODEL_VERSION
+      # MODEL_VERSION Used in next step for deployment
+      #=====================================   
+      - name: Read registered flow latest version
+        shell: bash
+        run: |
+          readarray arr <"model_version.txt"
+          model_version=${arr[0]}
+          echo $model_version
+          echo "MODEL_VERSION=${model_version}"  >> "$GITHUB_ENV"
+
+      #=====================================
+      # Executes Kubernetes deployment when parameter deployment_type == 'aml'
+      # Reads 'kubernetes_endpoint' field values from deployment_config.json
+      #=====================================             
+      - name: Deploy to AML real-time online endpoint
+        if: ${{ inputs.deployment_type == 'aml'  }}
+        uses: ./.github/actions/aml_real_deployment
+        with:
+          SUBSCRIPTION_ID: ${{ steps.subscription_details.outputs.SUBSCRIPTION_ID }}
+          flow_to_execute: ${{ inputs.flow_type }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.env_name }}
+          MODEL_VERSION: $MODEL_VERSION
+
+      #=====================================
+      # Executes AML Compute deployment when parameter deployment_type == 'aks'
+      # Reads 'azure_managed_endpoint' field values from deployment_config.json
+      #=====================================     
+      - name: Deploy to kubernetes real-time online endpoint
+        if: ${{ inputs.deployment_type == 'aks'  }}  
+        uses: ./.github/actions/kubernetes_deployment
+        with:
+          SUBSCRIPTION_ID: ${{ steps.subscription_details.outputs.SUBSCRIPTION_ID }}
+          flow_to_execute: ${{ inputs.flow_type }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.env_name }}
+          MODEL_VERSION: $MODEL_VERSION
+
+      #=====================================
+      # Creates local pf connections when deployment type is webapp
+      # Uses secret CONNECTION_DETAILS for creating connections
+      #=====================================     
+      - name: Create local PF Connections 
+        if: ${{ inputs.deployment_type == 'webapp'  }}  
+        uses: ./.github/actions/execute_script
+        with:
+          step_name: "Create local PF connections"
+          script_parameter: |
+            python -m llmops.common.prompt_local_connections \
+              --env_name ${{ inputs.env_name }} \
+              --flow_to_execute ${{ inputs.flow_type }} \
+              --connection_details '${{ secrets.CONNECTION_DETAILS }}'
+
+        #=====================================
+        # Executes Azure Webapp deployment when parameter 
+        # deployment_type == 'webapp' using docker image
+        # Reads 'webapp_endpoint' field values from deployment_config.json
+        #=====================================     
+      - name: Deploy to webapp
+        if: ${{ inputs.deployment_type == 'webapp'  }}  
+        uses: ./.github/actions/webapp_deployment
+        with:
+          FLOW_TO_EXECUTE: ${{ inputs.flow_type }}
+          DEPLOY_ENVIRONMENT: ${{ inputs.env_name }}
+        env:
+          CONNECTION_DETAILS: ${{ secrets.connection_details }} 
+          REGISTRY_DETAILS: ${{ secrets.registry_details }}
+        
+            
+
+
+
+
+
+            

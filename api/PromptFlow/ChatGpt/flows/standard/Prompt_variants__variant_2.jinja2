@@ -1,0 +1,15 @@
+system:
+{{systemmessage}}
+context: {{contexts}}
+
+chat history:
+{% for item in chat_history %}
+user:
+{{item.user}}
+assistant:
+{{item.bot}}
+
+{% endfor %}
+
+user:
+{{ question }}

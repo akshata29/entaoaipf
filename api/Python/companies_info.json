@@ -1,0 +1,156 @@
+{
+    "789019": {
+        "Company Name": "MICROSOFT CORP",
+        "SIC": "7372",
+        "State location": "WA",
+        "State of Inc": "WA",
+        "Fiscal Year End": "0630"
+    },
+    "320193": {
+        "Company Name": "Apple Inc.",
+        "SIC": "3571",
+        "State location": "CA",
+        "State of Inc": "CA",
+        "Fiscal Year End": "0930"
+    },
+    "1318605": {
+        "Company Name": "Tesla, Inc.",
+        "SIC": "3711",
+        "State location": "CA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "831001": {
+        "Company Name": "CITIGROUP INC",
+        "SIC": "6021",
+        "State location": "NY",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "1018724": {
+        "Company Name": "AMAZON COM INC",
+        "SIC": "5961",
+        "State location": "WA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "1640147": {
+        "Company Name": "Snowflake Inc.",
+        "SIC": "7372",
+        "State location": "MT",
+        "State of Inc": "DE",
+        "Fiscal Year End": "0131"
+    },
+    "1326801": {
+        "Company Name": "Meta Platforms, Inc.",
+        "SIC": "7370",
+        "State location": "CA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "896159": {
+        "Company Name": "Chubb Ltd",
+        "SIC": "6331",
+        "State location": "V8",
+        "State of Inc": "V8",
+        "Fiscal Year End": "1231"
+    },
+    "1750": {
+        "Company Name": "AAR CORP",
+        "SIC": "3720",
+        "State location": "IL",
+        "State of Inc": "DE",
+        "Fiscal Year End": "0531"
+    },
+    "40545": {
+        "Company Name": "GENERAL ELECTRIC CO",
+        "SIC": "3600",
+        "State location": "MA",
+        "State of Inc": "NY",
+        "Fiscal Year End": "1231"
+    },
+    "1559720": {
+        "Company Name": "Airbnb, Inc.",
+        "SIC": "7340",
+        "State location": "CA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "6201": {
+        "Company Name": "American Airlines Group Inc.",
+        "SIC": "4512",
+        "State location": "TX",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "100517": {
+        "Company Name": "United Airlines Holdings, Inc.",
+        "SIC": "4512",
+        "State location": "IL",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "70858": {
+        "Company Name": "BANK OF AMERICA CORP /DE/",
+        "SIC": "6021",
+        "State location": "NC",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "72971": {
+        "Company Name": "WELLS FARGO & COMPANY/MN",
+        "SIC": "6021",
+        "State location": "CA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "1535929": {
+        "Company Name": "Voya Financial, Inc.",
+        "SIC": "6311",
+        "State location": "NY",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "1210677": {
+        "Company Name": "FIRST ADVANTAGE CORP",
+        "SIC": "7389",
+        "State location": "GA",
+        "State of Inc": null,
+        "Fiscal Year End": "1231"
+    },
+    "51143": {
+        "Company Name": "INTERNATIONAL BUSINESS MACHINES CORP",
+        "SIC": "3570",
+        "State location": "NY",
+        "State of Inc": "NY",
+        "Fiscal Year End": "1231"
+    },
+    "73124": {
+        "Company Name": "NORTHERN TRUST CORP",
+        "SIC": "6022",
+        "State location": "IL",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "63908": {
+        "Company Name": "MCDONALDS CORP",
+        "SIC": "5812",
+        "State location": "IL",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "1069157": {
+        "Company Name": "EAST WEST BANCORP INC",
+        "SIC": "6022",
+        "State location": "CA",
+        "State of Inc": "DE",
+        "Fiscal Year End": "1231"
+    },
+    "200406": {
+        "Company Name": "JOHNSON & JOHNSON",
+        "SIC": "2834",
+        "State location": "NJ",
+        "State of Inc": "NJ",
+        "Fiscal Year End": "1231"
+    }
+}

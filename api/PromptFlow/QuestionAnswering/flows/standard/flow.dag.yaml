@@ -1,0 +1,235 @@
+id: QuestionAnswering
+name: QuestionAnswering
+environment:
+  python_requirements_txt: requirements.txt
+inputs:
+  question:
+    type: string
+    default: What actions has Wells Fargo taken to manage under the asset cap
+      mentioned in the report?
+    is_chat_input: false
+  indexType:
+    type: string
+    is_chat_input: false
+    default: cogsearchvs
+  indexNs:
+    type: string
+    is_chat_input: false
+    default: 30e85c5ac9184984b02a557b202dff07
+  postBody:
+    type: object
+    is_chat_input: false
+    default:
+      values:
+      - recordId: 0
+        data:
+          text: ""
+          approach: rtr
+          overrides:
+            semantic_ranker: true
+            semantic_captions: false
+            top: 3
+            temperature: 0
+            promptTemplate: "Given the following extracted parts of a long document and a
+              question, create a final answer.\ 
+
+              \        If you don't know the answer, just say that
+              you don't know. Don't try to make up an answer.\ 
+
+              \        If the answer is not contained within the
+              text below, say \"I don't know\".
+
+
+              \        {summaries}
+
+              \        Question: {question}
+
+              \        "
+            chainType: stuff
+            tokenLength: 1000
+            embeddingModelType: azureopenai
+            deploymentType: gpt3516k
+            searchType: hybridrerank
+  chainType:
+    type: string
+    is_chat_input: false
+    default: stuff
+outputs:
+  output:
+    type: string
+    reference: ${generate_final_answer.output}
+  answer:
+    type: string
+    reference: ${generate_final_answer.output.values[0].data.answer}
+  context:
+    type: string
+    reference: ${generate_final_answer.output.values[0].data.data_points}
+nodes:
+- name: answer_the_question_with_context
+  type: llm
+  source:
+    type: code
+    path: answer_the_question_with_context.jinja2
+  inputs:
+    deployment_name: chat4turbo
+    temperature: 0
+    top_p: 1
+    max_tokens: 1000
+    presence_penalty: 0
+    frequency_penalty: 0
+    prompt_text: ${Prompt_variants.output}
+  provider: AzureOpenAI
+  connection: dataaioaiwus
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${check_cache_answer.output.existingAnswer}
+    is: 0
+  use_variants: false
+- name: Prompt_variants
+  use_variants: true
+- name: followup_with_context
+  type: llm
+  source:
+    type: code
+    path: followup_with_context.jinja2
+  inputs:
+    deployment_name: chat4turbo
+    temperature: 1
+    top_p: 1
+    max_tokens: 500
+    presence_penalty: 0
+    frequency_penalty: 0
+    followup_prompt: ${followup_prompt.output}
+  provider: AzureOpenAI
+  connection: dataaioaiwus
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${check_cache_answer.output.existingAnswer}
+    is: 0
+  use_variants: false
+- name: embed_question
+  type: python
+  source:
+    type: package
+    tool: promptflow.tools.embedding.embedding
+  inputs:
+    connection: dataaioaiwus
+    deployment_name: embedding
+    input: ${inputs.question}
+  use_variants: false
+- name: generate_final_answer
+  type: python
+  source:
+    type: code
+    path: generate_final_answer.py
+  inputs:
+    embeddedQuestion: ${embed_question.output}
+    existingAnswer: ${check_cache_answer.output.existingAnswer}
+    indexNs: ${inputs.indexNs}
+    indexType: ${inputs.indexType}
+    jsonAnswer: ${check_cache_answer.output.jsonAnswer}
+    modifiedAnswer: ${answer_the_question_with_context.output}
+    nextQuestions: ${followup_with_context.output}
+    overrides: ${parse_post_body.output}
+    question: ${inputs.question}
+    retrievedDocs: ${search_question_from_vectordb.output}
+    conn: entaoaipf
+  use_variants: false
+- name: check_cache_answer
+  type: python
+  source:
+    type: code
+    path: check_cache_answer.py
+  inputs:
+    embeddedQuestion: ${embed_question.output}
+    indexNs: ${inputs.indexNs}
+    indexType: ${inputs.indexType}
+    question: ${inputs.question}
+    conn: entaoaipf
+  use_variants: false
+- name: search_question_from_vectordb
+  type: python
+  source:
+    type: code
+    path: search_question_from_vectordb.py
+  inputs:
+    embeddedQuestion: ${embed_question.output}
+    indexNs: ${inputs.indexNs}
+    indexType: ${inputs.indexType}
+    overrides: ${parse_post_body.output}
+    question: ${inputs.question}
+    conn: entaoaipf
+  activate:
+    when: ${check_cache_answer.output.existingAnswer}
+    is: 0
+  use_variants: false
+- name: parse_post_body
+  type: python
+  source:
+    type: code
+    path: parse_post_body.py
+  inputs:
+    postBody: ${inputs.postBody}
+  use_variants: false
+- name: followup_prompt
+  type: prompt
+  source:
+    type: code
+    path: followup_prompt.jinja2
+  inputs:
+    contexts: ${search_question_from_vectordb.output}
+  activate:
+    when: ${check_cache_answer.output.existingAnswer}
+    is: 0
+  use_variants: false
+- name: extract_systemmessage
+  type: python
+  source:
+    type: code
+    path: extract_systemmessage.py
+  inputs:
+    overrides: ${parse_post_body.output}
+  use_variants: false
+node_variants:
+  Prompt_variants:
+    default_variant_id: variant_2
+    variants:
+      variant_0:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants.jinja2
+          inputs:
+            contexts: ${search_question_from_vectordb.output}
+            question: ${inputs.question}
+          activate:
+            when: ${check_cache_answer.output.existingAnswer}
+            is: 0
+      variant_1:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants__variant_1.jinja2
+          inputs:
+            contexts: ${search_question_from_vectordb.output}
+            question: ${inputs.question}
+          activate:
+            when: ${check_cache_answer.output.existingAnswer}
+            is: 0
+      variant_2:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants__variant_2.jinja2
+          inputs:
+            contexts: ${search_question_from_vectordb.output}
+            question: ${inputs.question}
+            systemmessage: ${extract_systemmessage.output}
+          activate:
+            when: ${check_cache_answer.output.existingAnswer}
+            is: 0

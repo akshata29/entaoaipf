@@ -1,0 +1,279 @@
+id: ChatGpt
+name: ChatGpt
+environment:
+  python_requirements_txt: requirements.txt
+inputs:
+  chat_history:
+    type: list
+    default:
+    - user: What is the net income and diluted EPS for 2022 and 2021?
+      bot: The net income for Wells Fargo in 2022 was $13.2 billion, with diluted
+        earnings per common share (EPS) of $3.14. This is a decrease compared to
+        2021, where the net income was $21.5 billion, with diluted EPS of $4.95.
+        The decrease in net income in 2022 was primarily due to a decrease in
+        noninterest income, an increase in provision for credit losses, and an
+        increase in noninterest expense. However, there was an increase in net
+        interest income, a decrease in income tax expense, and a decrease in net
+        income from noncontrolling interests. It is important to note that these
+        financial results are discussed in more detail in the \"Earnings
+        Performance\" section of Wells Fargo's Annual Report on Form 10-K for
+        the year ended December 31, 2021.
+    - user: Can you provide more details on the increase in noninterest expense for
+        Wells Fargo in 2022?
+    is_chat_input: false
+    is_chat_history: true
+  question:
+    type: string
+    default: What is the net income and diluted EPS for 2022 and 2021?
+    is_chat_input: true
+  indexNs:
+    type: string
+    is_chat_input: false
+    default: 30e85c5ac9184984b02a557b202dff07
+  indexType:
+    type: string
+    is_chat_input: false
+    default: cogsearchvs
+  postBody:
+    type: object
+    is_chat_input: false
+    default:
+      values:
+      - recordId: 0
+        data:
+          history:
+          - user: What are the four reportable operating segments of Wells Fargo?
+          overrides:
+            top: 3
+            temperature: 0.3
+            promptTemplate: "You are an AI assistant tasked with answering questions and
+              summarizing information from\ 
+
+              \        earning call transcripts, annual reports,
+              SEC filings and financial statements.
+
+              \        Your answer should accurately capture the
+              key information in the document while avoiding the omission of any
+              domain-specific words.\ 
+
+              \        Please generate a concise and comprehensive
+              information that includes details such as reporting year and
+              amount in millions.
+
+              \        Ensure that it is easy to understand for
+              business professionals and provides an accurate representation of
+              the financial statement history.\ 
+
+              \       \ 
+
+              \        Please remember to use clear language and
+              maintain the integrity of the original information without missing
+              any important details
+
+
+              \        QUESTION: \\{question}
+
+              \        =========
+
+              \        {summaries}
+
+              \        =========
+
+              \        "
+            suggest_followup_questions: true
+            embeddingModelType: azureopenai
+            firstSession: true
+            session:
+              id: 8j1135s4wf2ssqaqykissn
+              name: 2a6wc7ivdekc69v7a3v7jg
+              type: Session
+              sessionId: 2a6wc7ivdekc69v7a3v7jg
+              chainType: stuff
+              feature: chat
+              indexId: 30e85c5ac9184984b02a557b202dff07
+              indexType: cogsearchvs
+              indexName: wf2022
+              llmModel: gpt3.5
+              timestamp: "1709494818675"
+              tokenUsed: 0
+              embeddingModelType: azureopenai
+            sessionId: 2a6wc7ivdekc69v7a3v7jg
+            deploymentType: gpt35
+            chainType: stuff
+outputs:
+  chat_output:
+    type: string
+    reference: ${chat_with_context.output}
+    is_chat_output: true
+  output:
+    type: string
+    reference: ${generate_final_answer.output}
+  answer:
+    type: string
+    reference: ${generate_final_answer.output.values[0].data.answer}
+  context:
+    type: string
+    reference: ${generate_final_answer.output.values[0].data.data_points}
+nodes:
+- name: Prompt_variants
+  use_variants: true
+- name: followup_with_context
+  type: llm
+  source:
+    type: code
+    path: followup_with_context.jinja2
+  inputs:
+    deployment_name: chat4turbo
+    temperature: 1
+    top_p: 1
+    max_tokens: 500
+    presence_penalty: 0
+    frequency_penalty: 0
+    followup_prompt: ${followup_prompt.output}
+  provider: AzureOpenAI
+  connection: dataaioaiwus
+  api: chat
+  module: promptflow.tools.aoai
+  use_variants: false
+- name: embed_question
+  type: python
+  source:
+    type: package
+    tool: promptflow.tools.embedding.embedding
+  inputs:
+    connection: dataaioaiwus
+    deployment_name: embedding
+    input: ${modify_query_with_history.output}
+  use_variants: false
+- name: insert_session
+  type: python
+  source:
+    type: code
+    path: insert_session.py
+  inputs:
+    overrides: ${parse_post_body.output.overrides}
+    history: ${parse_post_body.output.history}
+    conn: entaoaipf
+  use_variants: false
+- name: generate_final_answer
+  type: python
+  source:
+    type: code
+    path: generate_final_answer.py
+  inputs:
+    modifiedAnswer: ${chat_with_context.output}
+    nextQuestions: ${followup_with_context.output}
+    overrides: ${parse_post_body.output.overrides}
+    question: ${inputs.question}
+    retrievedDocs: ${search_question_from_vectordb.output}
+    conn: entaoaipf
+  use_variants: false
+- name: search_question_from_vectordb
+  type: python
+  source:
+    type: code
+    path: search_question_from_vectordb.py
+  inputs:
+    embeddedQuestion: ${embed_question.output}
+    indexNs: ${inputs.indexNs}
+    indexType: ${inputs.indexType}
+    overrides: ${parse_post_body.output.overrides}
+    question: ${modify_query_with_history.output}
+    conn: entaoaipf
+  use_variants: false
+- name: parse_post_body
+  type: python
+  source:
+    type: code
+    path: parse_post_body.py
+  inputs:
+    postBody: ${inputs.postBody}
+  use_variants: false
+- name: followup_prompt
+  type: prompt
+  source:
+    type: code
+    path: followup_prompt.jinja2
+  inputs:
+    contexts: ${search_question_from_vectordb.output}
+  use_variants: false
+- name: modify_query_with_history
+  type: llm
+  source:
+    type: code
+    path: modify_query_with_history.jinja2
+  inputs:
+    deployment_name: chat4turbo
+    temperature: 0
+    top_p: 1
+    max_tokens: 1000
+    presence_penalty: 0
+    frequency_penalty: 0
+    chat_history: ${parse_post_body.output.history}
+    chat_input: ${inputs.question}
+  provider: AzureOpenAI
+  connection: dataaioaiwus
+  api: chat
+  module: promptflow.tools.aoai
+  use_variants: false
+- name: extract_systemmessage
+  type: python
+  source:
+    type: code
+    path: extract_systemmessage.py
+  inputs:
+    overrides: ${parse_post_body.output.overrides}
+  use_variants: false
+- name: chat_with_context
+  type: llm
+  source:
+    type: code
+    path: chat_with_context.jinja2
+  inputs:
+    deployment_name: chat4turbo
+    temperature: 0
+    top_p: 1
+    max_tokens: 1000
+    presence_penalty: 0
+    frequency_penalty: 0
+    prompt_text: ${Prompt_variants.output}
+  provider: AzureOpenAI
+  connection: dataaioaiwus
+  api: chat
+  module: promptflow.tools.aoai
+  use_variants: false
+node_variants:
+  Prompt_variants:
+    default_variant_id: variant_2
+    variants:
+      variant_0:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants.jinja2
+          inputs:
+            contexts: ${search_question_from_vectordb.output}
+            chat_history: ${inputs.chat_history}
+            chat_input: ${inputs.question}
+      variant_1:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants__variant_1.jinja2
+          inputs:
+            contexts: ${search_question_from_vectordb.output}
+            chat_history: ${inputs.chat_history}
+            chat_input: ${inputs.question}
+      variant_2:
+        node:
+          type: prompt
+          source:
+            type: code
+            path: Prompt_variants__variant_2.jinja2
+          inputs:
+            chat_history: ${inputs.chat_history}
+            contexts: ${search_question_from_vectordb.output}
+            question: ${inputs.question}
+            systemmessage: ${extract_systemmessage.output}
